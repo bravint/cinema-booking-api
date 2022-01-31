@@ -7,6 +7,22 @@ const getAllMovies = async (req, res) => {
     return res.json(response);
 };
 
+const getMovie = async (req, res) => {
+    const { movie } = req.params;
+    let response;
+    if (isNaN(movie)) {
+        response = await findMovieByTitle(movie)
+    } else {
+        response = await findMovieById(parseInt(movie))
+    }
+    console.log(`post number check`, response);
+    if (response) {
+        return res.json(response)
+    } else {
+        return res.status(404).send(`no match for ${movie} found`);
+    }
+};
+
 const createMovie = async (req, res) => {
     const { title, runtimeMins, screenings } = req.body;
     if (await checkForExistingMovie(title))
@@ -51,4 +67,23 @@ const checkForExistingMovie = async (title) => {
     });
 };
 
-module.exports = { getAllMovies, createMovie };
+const findMovieByTitle = async (title) => {
+    return await prisma.movie.findMany({
+        where: {
+            title: {
+                contains: title,
+                mode: 'insensitive',
+            },
+        },
+    });
+};
+
+const findMovieById = async (id) => {
+    return await prisma.movie.findUnique({
+        where: {
+            id: id,
+        },
+    });
+};
+
+module.exports = { getAllMovies, getMovie, createMovie };
