@@ -29,32 +29,29 @@ const createCustomer = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
     let { id } = req.params;
-    console.log(id)
     id = parseInt(id, 10);
     const { name, contact } = req.body;
-    const phone = contact.phone
-    const email = contact.email
+    const phone = contact.phone;
+    const email = contact.email;
     const updatedCustomer = await prisma.customer.update({
         where: {
-            id: id
+            id: id,
         },
         data: {
             name,
             contact: {
                 update: {
                     phone,
-                    email
-                }
-            }
+                    email,
+                },
+            },
         },
         include: {
             contact: true,
         },
-    
-    })
+    });
 
     res.json({ data: updatedCustomer });
-    //return res.status(404).send('temp message');
 };
 
 module.exports = {
