@@ -54,7 +54,11 @@ const createMovieWithScreening = async (title, runtimeMins, screenings) => {
         data: {
             title,
             runtimeMins,
-            screenings,
+            screenings: {
+                createMany: {
+                    data: screenings,
+                },
+            },
         },
     });
 };
@@ -91,7 +95,7 @@ const updateMovie = async (req, res) => {
     id = parseInt(id, 10);
     const { title, runtimeMins, screenings } = req.body;
 
-    const updatedMovie = await prisma.movie.update({
+    const updatedMovieWithScreenings = await prisma.movie.update({
         where: {
             id: id,
         },
@@ -105,7 +109,7 @@ const updateMovie = async (req, res) => {
             },
         },
     });
-    res.json(updatedMovie);
+    res.json(updatedMovieWithScreenings);
 };
 
 module.exports = { getAllMovies, getMovie, createMovie, updateMovie };
