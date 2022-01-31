@@ -13,7 +13,7 @@ const getMovie = async (req, res) => {
     if (isNaN(movie)) {
         response = await findMovieByTitle(movie)
     } else {
-        response = await findMovieById(parseInt(movie))
+        response = await findMovieById(parseInt(movie, 10))
     }
     console.log(`post number check`, response);
     if (response) {
