@@ -1,5 +1,4 @@
-const { Prisma, PrismaClient } = require('@prisma/client');
-const { movie } = require('../utils/prisma');
+const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
@@ -10,8 +9,8 @@ const getAllMovies = async (req, res) => {
 
 const createMovie = async (req, res) => {
     const { title, runtimeMins, screenings } = req.body;
-    if (checkForExistingMovie())
-        res.status(400).send('Movie already exists in database');
+    if (await checkForExistingMovie(title))
+        return res.status(400).send('Movie already exists in database');
     let response;
     if (screenings === undefined) {
         response = await createMovieWithoutScreening(title, runtimeMins);
@@ -45,7 +44,7 @@ const createMovieWithScreening = async (title, runtimeMins, screenings) => {
 };
 
 const checkForExistingMovie = async (title) => {
-    return await prisma.movie.findUnique({
+    return await prisma.movie.findFirst({
         where: {
             title: title,
         },
