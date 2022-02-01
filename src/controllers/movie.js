@@ -3,7 +3,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const getAllMovies = async (req, res) => {
-    //expected request takes the form http://localhost:4000/movie?by=runtime&gt=716&lt=819
     let response;
 
     if (Object.values(req.query).length > 0) {
@@ -16,6 +15,10 @@ const getAllMovies = async (req, res) => {
 };
 
 const filterByRuntime = async (query) => {
+
+    // EXAMPLE REQUEST
+    // http://localhost:4000/movie?by=runtime&gt=716&lt=819
+
     let minValue;
     let maxValue;
 
@@ -89,6 +92,24 @@ const createMovieWithoutScreening = async (title, runtimeMins) => {
 };
 
 const createMovieWithScreening = async (title, runtimeMins, screenings) => {
+
+    // EXAMPLE REQUEST
+    // {
+    //     "title":"Jumanji",
+    //     "runtimeMins": 102,
+    //     "screenings":
+    //         [
+    //             {
+    //             "startsAt":"2022-02-19T14:21:00+00:00",
+    //             "screenId":1
+    //             },
+    //             {
+    //             "startsAt":"2022-03-19T14:21:00+00:00",
+    //             "screenId":1
+    //             }
+    //         ]
+    // }
+
     return await prisma.movie.create({
         data: {
             title,
@@ -156,7 +177,7 @@ const createScreen = async (req, res) => {
     } else {
         response = await createScreenWithScreening(number, screenings);
     }
-    
+
     return res.json(response);
 };
 
