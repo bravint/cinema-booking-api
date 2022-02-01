@@ -15,7 +15,6 @@ const getAllMovies = async (req, res) => {
 };
 
 const filterByRuntime = async (query) => {
-
     // EXAMPLE REQUEST
     // http://localhost:4000/movie?by=runtime&gt=716&lt=819
 
@@ -66,7 +65,7 @@ const createMovie = async (req, res) => {
     const checkForExistingMovie = await findMovieByTitle(title);
     if (checkForExistingMovie.length > 0)
         return res.status(400).send('Movie already exists in database');
-    
+
     let response;
 
     if (screenings === undefined) {
@@ -92,7 +91,6 @@ const createMovieWithoutScreening = async (title, runtimeMins) => {
 };
 
 const createMovieWithScreening = async (title, runtimeMins, screenings) => {
-
     // EXAMPLE REQUEST
     // {
     //     "title":"Jumanji",
@@ -148,6 +146,8 @@ const updateMovie = async (req, res) => {
 
     const { title, runtimeMins, screenings } = req.body;
 
+    await deleteExisitingScreenings(id);
+
     const updatedMovie = await prisma.movie.update({
         where: {
             id: id,
@@ -165,6 +165,14 @@ const updateMovie = async (req, res) => {
     });
 
     res.json(updatedMovie);
+};
+
+const deleteExisitingScreenings = async (movieId) => {
+    await prisma.screening.deleteMany({
+        where: {
+            movieId: movieId,
+        },
+    });
 };
 
 const createScreen = async (req, res) => {
