@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const getAllMovies = async (req, res) => {
     let response;
 
-    if (Object.values(req.query).length > 0) {
+    if (Object.values(req.query).length > 0 && req.query.by === 'runtime') {
         response = await filterByRuntime(req.query);
     } else {
         response = await getAll();
