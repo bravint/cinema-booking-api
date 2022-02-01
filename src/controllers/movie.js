@@ -3,51 +3,53 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const getAllMovies = async (req, res) => {
-    //expected request takes the foem http://localhost:4000/movie?by=runtime&gt=716&lt=819
-    console.log(req.query)
+    //expected request takes the form http://localhost:4000/movie?by=runtime&gt=716&lt=819
     let response;
-    if (Object.values(req.query).length > 0 ) {
-        response = await filterByRuntime(req.query)
+
+    if (Object.values(req.query).length > 0) {
+        response = await filterByRuntime(req.query);
     } else {
-        response = await getAll()
+        response = await getAll();
     }
+
     return res.json(response);
 };
 
 const filterByRuntime = async (query) => {
-    console.log(query)
     let minValue;
     let maxValue;
-    query.gt === undefined ? minValue = 1 : minValue = parseInt(query.gt, 10)
-    query.lt === undefined ? maxValue = 100000 : maxValue = parseInt(query.lt, 10)
-    console.log('minValue', minValue, 'maxValue', maxValue)
+
+    query.gt === undefined ? (minValue = 1) : (minValue = parseInt(query.gt, 10));
+    query.lt === undefined ? (maxValue = 100000) : (maxValue = parseInt(query.lt, 10));
 
     return await prisma.movie.findMany({
         where: {
             runtimeMins: {
                 gt: minValue,
-                lt: maxValue
-            }
+                lt: maxValue,
+            },
         },
         include: { screenings: true },
     });
-}
+};
 
 const getAll = async () => {
     return await prisma.movie.findMany({
         include: { screenings: true },
     });
-}
+};
 
 const getMovie = async (req, res) => {
     const { movie } = req.params;
+
     let response;
+
     if (isNaN(movie)) {
         response = await findMovieByTitle(movie);
     } else {
         response = await findMovieById(parseInt(movie, 10));
     }
-    console.log(`post number check`, response);
+
     if (response) {
         return res.json(response);
     } else {
@@ -57,9 +59,13 @@ const getMovie = async (req, res) => {
 
 const createMovie = async (req, res) => {
     const { title, runtimeMins, screenings } = req.body;
-    if (await checkForExistingMovie(title))
+
+    const checkForExistingMovie = await findMovieByTitle(title);
+    if (checkForExistingMovie.length > 0)
         return res.status(400).send('Movie already exists in database');
+    
     let response;
+
     if (screenings === undefined) {
         response = await createMovieWithoutScreening(title, runtimeMins);
     } else {
@@ -69,6 +75,7 @@ const createMovie = async (req, res) => {
             screenings
         );
     }
+
     return res.json(response);
 };
 
@@ -95,14 +102,6 @@ const createMovieWithScreening = async (title, runtimeMins, screenings) => {
     });
 };
 
-const checkForExistingMovie = async (title) => {
-    return await prisma.movie.findFirst({
-        where: {
-            title: title,
-        },
-    });
-};
-
 const findMovieByTitle = async (title) => {
     return await prisma.movie.findMany({
         where: {
@@ -125,9 +124,10 @@ const findMovieById = async (id) => {
 const updateMovie = async (req, res) => {
     let { id } = req.params;
     id = parseInt(id, 10);
+
     const { title, runtimeMins, screenings } = req.body;
 
-    const updatedMovieWithScreenings = await prisma.movie.update({
+    const updatedMovie = await prisma.movie.update({
         where: {
             id: id,
         },
@@ -135,21 +135,28 @@ const updateMovie = async (req, res) => {
             title,
             runtimeMins,
             screenings: {
-                upsert: screenings, //assume screenings takes form of array
+                createMany: {
+                    data: screenings,
+                },
             },
         },
+        include: { screenings: true },
     });
-    res.json(updatedMovieWithScreenings);
+
+    res.json(updatedMovie);
 };
 
 const createScreen = async (req, res) => {
     const { number, screenings } = req.body;
+
     let response;
+
     if (screenings === undefined) {
         response = await createScreenWithoutScreening(number);
     } else {
         response = await createScreenWithScreening(number, screenings);
     }
+    
     return res.json(response);
 };
 
@@ -174,4 +181,10 @@ const createScreenWithScreening = async (number, screenings) => {
     });
 };
 
-module.exports = { getAllMovies, getMovie, createMovie, updateMovie, createScreen };
+module.exports = {
+    getAllMovies,
+    getMovie,
+    createMovie,
+    updateMovie,
+    createScreen,
+};
