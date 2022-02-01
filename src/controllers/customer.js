@@ -30,9 +30,11 @@ const createCustomer = async (req, res) => {
 const updateCustomer = async (req, res) => {
     let { id } = req.params;
     id = parseInt(id, 10);
+
     const { name, contact } = req.body;
     const phone = contact.phone;
     const email = contact.email;
+    
     const updatedCustomer = await prisma.customer.update({
         where: {
             id: id,
