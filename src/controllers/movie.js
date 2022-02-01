@@ -52,11 +52,8 @@ const getMovie = async (req, res) => {
         response = await findMovieById(parseInt(movie, 10));
     }
 
-    if (response) {
-        return res.json(response);
-    } else {
-        return res.status(404).send(`no match for ${movie} found`);
-    }
+    if (response) return res.json(response);
+    if (!response) return res.status(404).send(`no match for ${movie} found`);
 };
 
 const createMovie = async (req, res) => {
@@ -67,16 +64,9 @@ const createMovie = async (req, res) => {
         return res.status(400).send('Movie already exists in database');
 
     let response;
-
-    if (screenings === undefined) {
-        response = await createMovieWithoutScreening(title, runtimeMins);
-    } else {
-        response = await createMovieWithScreening(
-            title,
-            runtimeMins,
-            screenings
-        );
-    }
+    
+    if (screenings) response = await createMovieWithScreening(title, runtimeMins, screenings);
+    if (!screenings) response = await createMovieWithoutScreening(title, runtimeMins);
 
     return res.json(response);
 };
@@ -180,11 +170,8 @@ const createScreen = async (req, res) => {
 
     let response;
 
-    if (screenings === undefined) {
-        response = await createScreenWithoutScreening(number);
-    } else {
-        response = await createScreenWithScreening(number, screenings);
-    }
+    if (screenings) response = await createScreenWithScreening(number, screenings);
+    if (!screenings) response = await createScreenWithoutScreening(number);
 
     return res.json(response);
 };
@@ -198,6 +185,22 @@ const createScreenWithoutScreening = async (number) => {
 };
 
 const createScreenWithScreening = async (number, screenings) => {
+    // EXAMPLE REQUEST
+    // {
+    //     "number": 10,
+    //     "screenings":
+    //         [
+    //             {
+    //                 "startsAt":"2022-02-19T14:21:00+00:00",
+    //                 "movieId":1
+    //             },
+    //             {
+    //                 "startsAt":"2022-03-19T14:21:00+00:00",
+    //                 "movieId":1
+    //             }
+    //         ]
+    // }
+
     return await prisma.screen.create({
         data: {
             number,
