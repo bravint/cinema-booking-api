@@ -165,6 +165,37 @@ const deleteExisitingScreenings = async (movieId) => {
     });
 };
 
+// IF SCREENING ID IS KNOWN UPSERT CAN BE USED
+
+// const updateMovie = async (req, res) => {
+//     let { id } = req.params;
+//     id = parseInt(id, 10);
+
+//     const { title, runtimeMins, screenings } = req.body;
+
+//     const updatedMovie = await prisma.movie.update({
+//         where: {
+//             id: id,
+//         },
+//         data: {
+//             title,
+//             runtimeMins,
+//             screenings: {
+//                 upsert: screenings.map((screening) => ({
+//                     create: screening,
+//                     update: screening,
+//                     where: {
+//                         id: screening.id,
+//                     },
+//                 }))
+//             },
+//         },
+//         include: { screenings: true },
+//     });
+
+//     res.json(updatedMovie);
+// };
+
 const createScreen = async (req, res) => {
     const { number, screenings } = req.body;
 
