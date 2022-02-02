@@ -22,7 +22,7 @@ const filterByRuntime = async (query) => {
     let maxValue;
 
     query.gt === undefined ? (minValue = 1) : (minValue = parseInt(query.gt, 10));
-    query.lt === undefined ? (maxValue = 100000): (maxValue = parseInt(query.lt, 10));
+    query.lt === undefined ? (maxValue = 100000): (maxValue = parseInt(query.lt, 10)); //Infinity does not work
 
     return await prisma.movie.findMany({
         where: {
