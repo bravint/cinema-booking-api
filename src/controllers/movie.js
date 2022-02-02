@@ -22,7 +22,7 @@ const filterByRuntime = async (query) => {
     let maxValue;
 
     query.gt === undefined ? (minValue = 1) : (minValue = parseInt(query.gt, 10));
-    query.lt === undefined ? (maxValue = 100000) : (maxValue = parseInt(query.lt, 10));
+    query.lt === undefined ? (maxValue = 100000): (maxValue = parseInt(query.lt, 10));
 
     return await prisma.movie.findMany({
         where: {
@@ -60,11 +60,10 @@ const createMovie = async (req, res) => {
     const { title, runtimeMins, screenings } = req.body;
 
     const checkForExistingMovie = await findMovieByTitle(title);
-    if (checkForExistingMovie.length > 0)
-        return res.status(400).send('Movie already exists in database');
+    if (checkForExistingMovie.length > 0) return res.status(400).send('Movie already exists in database');
 
     let response;
-    
+
     if (screenings) response = await createMovieWithScreening(title, runtimeMins, screenings);
     if (!screenings) response = await createMovieWithoutScreening(title, runtimeMins);
 
@@ -108,6 +107,7 @@ const createMovieWithScreening = async (title, runtimeMins, screenings) => {
                 },
             },
         },
+        include: { screenings: true },
     });
 };
 
@@ -136,72 +136,69 @@ const updateMovie = async (req, res) => {
 
     const { title, runtimeMins, screenings } = req.body;
 
-    await deleteExisitingScreenings(id);
+    await screenings.forEach((screening) => {
+        if (screening.id) updateScreenings(screening);
+        if (!screening.id) createScreenings(screening, id);
+    });
 
-    const updatedMovie = await prisma.movie.update({
+    const response = await updatedMovie(title, runtimeMins, id);
+
+    res.json(response);
+};
+
+const updatedMovie = async (title, runtimeMins, id) => {
+    return await prisma.movie.update({
         where: {
             id: id,
         },
         data: {
             title,
             runtimeMins,
-            screenings: {
-                createMany: {
-                    data: screenings,
+        },
+    });
+};
+
+const updateScreenings = async (screening) => {
+    const { startsAt, screenId, id } = screening;
+
+    await prisma.screening.update({
+        data: {
+            startsAt,
+            screenId,
+        },
+        where: {
+            id,
+        },
+    });
+};
+
+const createScreenings = async (screening, id) => {
+    const { startsAt, screenId } = screening;
+
+    await prisma.screening.create({
+        data: {
+            startsAt,
+            screen: {
+                connect: {
+                    id: screenId,
+                },
+            },
+            movie: {
+                connect: {
+                    id,
                 },
             },
         },
-        include: { screenings: true },
-    });
-
-    res.json(updatedMovie);
-};
-
-const deleteExisitingScreenings = async (movieId) => {
-    await prisma.screening.deleteMany({
-        where: {
-            movieId: movieId,
-        },
     });
 };
-
-// IF SCREENING ID IS KNOWN UPSERT CAN BE USED
-
-// const updateMovie = async (req, res) => {
-//     let { id } = req.params;
-//     id = parseInt(id, 10);
-
-//     const { title, runtimeMins, screenings } = req.body;
-
-//     const updatedMovie = await prisma.movie.update({
-//         where: {
-//             id: id,
-//         },
-//         data: {
-//             title,
-//             runtimeMins,
-//             screenings: {
-//                 upsert: screenings.map((screening) => ({
-//                     create: screening,
-//                     update: screening,
-//                     where: {
-//                         id: screening.id,
-//                     },
-//                 }))
-//             },
-//         },
-//         include: { screenings: true },
-//     });
-
-//     res.json(updatedMovie);
-// };
 
 const createScreen = async (req, res) => {
     const { number, screenings } = req.body;
 
     let response;
 
-    if (screenings) response = await createScreenWithScreening(number, screenings);
+    if (screenings)
+        response = await createScreenWithScreening(number, screenings);
     if (!screenings) response = await createScreenWithoutScreening(number);
 
     return res.json(response);
