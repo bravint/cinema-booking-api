@@ -1,7 +1,8 @@
-const prisma = require('../utils/prisma');
+const { prisma } = require('../utils');
 
 const createTicket = async (req, res) => {
     const { customerId, screeningId } = req.body;
+
     const response = await prisma.ticket.create({
         data: {
             customerId,
@@ -17,6 +18,7 @@ const createTicket = async (req, res) => {
             },
         },
     });
+    
     return res.json(response);
 };
 

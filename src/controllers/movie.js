@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { idToInteger, prisma } = require('../utils');
 
 const getAllMovies = async (req, res) => {
     let response;
@@ -15,14 +13,11 @@ const getAllMovies = async (req, res) => {
 };
 
 const filterByRuntime = async (query) => {
-    // EXAMPLE REQUEST
-    // http://localhost:4000/movie?by=runtime&gt=716&lt=819
-
     let minValue;
     let maxValue;
 
     query.gt === undefined ? (minValue = 1) : (minValue = parseInt(query.gt, 10));
-    query.lt === undefined ? (maxValue = 100000): (maxValue = parseInt(query.lt, 10)); //Infinity does not work
+    query.lt === undefined ? (maxValue = 100000) : (maxValue = parseInt(query.lt, 10));
 
     return await prisma.movie.findMany({
         where: {
@@ -52,21 +47,27 @@ const getMovie = async (req, res) => {
         response = await findMovieById(parseInt(movie, 10));
     }
 
-    if (response) return res.json(response);
-    if (!response) return res.status(404).send(`no match for ${movie} found`);
+    if (response.length === 0) {
+        return res.status(404).send(`No match for ${movie} found`);
+    } else {
+        return res.json(response)
+    }
 };
 
 const createMovie = async (req, res) => {
     const { title, runtimeMins, screenings } = req.body;
 
     const checkForExistingMovie = await findMovieByTitle(title);
-    if (checkForExistingMovie.length > 0) return res.status(400).send('Movie already exists in database');
+    if (checkForExistingMovie.length > 0) return res.status(400).send(`${title} already exists in database`);
 
     let response;
 
-    if (screenings) response = await createMovieWithScreening(title, runtimeMins, screenings);
-    if (!screenings) response = await createMovieWithoutScreening(title, runtimeMins);
-
+    if (screenings) {
+        response = await createMovieWithScreening(title, runtimeMins, screenings);
+    } else {
+        response = await createMovieWithoutScreening(title, runtimeMins);
+    }
+        
     return res.json(response);
 };
 
@@ -80,23 +81,6 @@ const createMovieWithoutScreening = async (title, runtimeMins) => {
 };
 
 const createMovieWithScreening = async (title, runtimeMins, screenings) => {
-    // EXAMPLE REQUEST
-    // {
-    //     "title":"Jumanji",
-    //     "runtimeMins": 102,
-    //     "screenings":
-    //         [
-    //             {
-    //             "startsAt":"2022-02-19T14:21:00+00:00",
-    //             "screenId":1
-    //             },
-    //             {
-    //             "startsAt":"2022-03-19T14:21:00+00:00",
-    //             "screenId":1
-    //             }
-    //         ]
-    // }
-
     return await prisma.movie.create({
         data: {
             title,
@@ -125,31 +109,37 @@ const findMovieByTitle = async (title) => {
 const findMovieById = async (id) => {
     return await prisma.movie.findUnique({
         where: {
-            id: id,
+            id,
         },
     });
 };
 
 const updateMovie = async (req, res) => {
-    let { id } = req.params;
-    id = parseInt(id, 10);
+    const id = idToInteger(req.params);
+    const { title, runtimeMins } = req.body;
 
-    const { title, runtimeMins, screenings } = req.body;
+    const updateToScreenings = req.body.screenings;
+    let screenings = [];
 
-    await screenings.forEach((screening) => {
-        if (screening.id) updateScreenings(screening);
-        if (!screening.id) createScreenings(screening, id);
-    });
+    for (let i = 0; i < updateToScreenings.length; i++) {
+        if (updateToScreenings.id) {
+            const updatedScreening = await updateScreenings(updateToScreenings[i]);
+            screenings.push(updatedScreening);
+        } else {
+            const updatedScreening = await createScreenings(updateToScreenings[i],id);
+            screenings.push(updatedScreening);
+        }
+    }
 
     const response = await updatedMovie(title, runtimeMins, id);
 
-    res.json(response);
+    res.json({ ...response, screenings });
 };
 
 const updatedMovie = async (title, runtimeMins, id) => {
     return await prisma.movie.update({
         where: {
-            id: id,
+            id,
         },
         data: {
             title,
@@ -161,7 +151,7 @@ const updatedMovie = async (title, runtimeMins, id) => {
 const updateScreenings = async (screening) => {
     const { startsAt, screenId, id } = screening;
 
-    await prisma.screening.update({
+    return await prisma.screening.update({
         data: {
             startsAt,
             screenId,
@@ -175,7 +165,7 @@ const updateScreenings = async (screening) => {
 const createScreenings = async (screening, id) => {
     const { startsAt, screenId } = screening;
 
-    await prisma.screening.create({
+    return await prisma.screening.create({
         data: {
             startsAt,
             screen: {
@@ -197,9 +187,11 @@ const createScreen = async (req, res) => {
 
     let response;
 
-    if (screenings)
+    if (screenings) {
         response = await createScreenWithScreening(number, screenings);
-    if (!screenings) response = await createScreenWithoutScreening(number);
+    } else {
+        response = await createScreenWithoutScreening(number);
+    }
 
     return res.json(response);
 };
@@ -213,22 +205,6 @@ const createScreenWithoutScreening = async (number) => {
 };
 
 const createScreenWithScreening = async (number, screenings) => {
-    // EXAMPLE REQUEST
-    // {
-    //     "number": 10,
-    //     "screenings":
-    //         [
-    //             {
-    //                 "startsAt":"2022-02-19T14:21:00+00:00",
-    //                 "movieId":1
-    //             },
-    //             {
-    //                 "startsAt":"2022-03-19T14:21:00+00:00",
-    //                 "movieId":1
-    //             }
-    //         ]
-    // }
-
     return await prisma.screen.create({
         data: {
             number,
@@ -237,6 +213,9 @@ const createScreenWithScreening = async (number, screenings) => {
                     data: screenings,
                 },
             },
+        },
+        include: {
+            screenings: true,
         },
     });
 };

@@ -1,4 +1,4 @@
-const prisma = require('../utils/prisma');
+const { idToInteger, prisma } = require('../utils');
 
 const createCustomer = async (req, res) => {
     const { name, phone, email } = req.body;
@@ -28,8 +28,7 @@ const createCustomer = async (req, res) => {
 };
 
 const updateCustomer = async (req, res) => {
-    let { id } = req.params;
-    id = parseInt(id, 10);
+    const id = idToInteger(req.params);
 
     const { name, contact } = req.body;
     const phone = contact.phone;
