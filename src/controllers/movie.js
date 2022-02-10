@@ -3,17 +3,13 @@ const { idToInteger, prisma } = require('../utils');
 const getAllMovies = async (req, res) => {
     let response;
 
-    if (Object.values(req.query).length > 0 && req.query.by === 'runtime') {
-        response = await filterByRuntime(req.query);
-    } else {
-        response = await getAll();
-    }
+    if (Object.values(req.query).length > 0 && req.query.by === 'runtime') response = await filterByRuntime(req.query);
 
-    if (response.length === 0) {
-        return res.status(200).json(`No movies found`);
-    } else {
-        return res.json(response);
-    }
+    response = await getAll();
+
+    if (response.length === 0) return res.status(200).json(`No movies found`);
+
+    return res.json(response);
 };
 
 const filterByRuntime = async (query) => {
@@ -51,26 +47,25 @@ const getMovie = async (req, res) => {
         response = await findMovieById(parseInt(movie, 10));
     }
 
-    if (!response.length) {
-        return res.status(404).send(`No match for ${movie} found`);
-    } else {
-        return res.json(response);
-    }
+    if (!response.length) return res.status(404).send(`No match for ${movie} found`);
+
+    return res.json(response);
+
 };
 
 const createMovie = async (req, res) => {
-    const { title, runtimeMins, screenings } = req.body;
+    let { title, runtimeMins, screenings } = req.body;
+
+    runtimeMins = Number(runtimeMins)
 
     const checkForExistingMovie = await findMovieByTitle(title);
     if (checkForExistingMovie.length > 0) return res.status(400).json(`${title} already exists in database`);
 
     let response;
 
-    if (screenings) {
-        response = await createMovieWithScreening(title, runtimeMins, screenings);
-    } else {
-        response = await createMovieWithoutScreening(title, runtimeMins);
-    }
+    if (screenings) response = await createMovieWithScreening(title, runtimeMins, screenings);
+
+    response = await createMovieWithoutScreening(title, runtimeMins);
         
     return res.json(response);
 };
@@ -205,11 +200,9 @@ const createScreen = async (req, res) => {
 
     let response;
 
-    if (screenings) {
-        response = await createScreenWithScreening(number, screenings);
-    } else {
-        response = await createScreenWithoutScreening(number);
-    }
+    if (screenings) response = await createScreenWithScreening(number, screenings);
+
+    response = await createScreenWithoutScreening(number);
 
     return res.json(response);
 };
